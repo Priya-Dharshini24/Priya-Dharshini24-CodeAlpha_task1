@@ -1,0 +1,52 @@
+from scapy.all import sniff, Ether, IP, TCP, UDP, ICMP, wrpcap
+from IPython.display import display, clear_output
+import pandas as pd
+
+# List to store captured packets
+captured_packets = []
+
+# Function to process and display packets
+def packet_callback(packet):
+    clear_output(wait=True)
+    
+    packet_info = {}
+    
+    if packet.haslayer(Ether):
+        ether_layer = packet.getlayer(Ether)
+        packet_info["Ethernet Src"] = ether_layer.src
+        packet_info["Ethernet Dst"] = ether_layer.dst
+
+    if packet.haslayer(IP):
+        ip_layer = packet.getlayer(IP)
+        packet_info["IP Src"] = ip_layer.src
+        packet_info["IP Dst"] = ip_layer.dst
+        packet_info["TTL"] = ip_layer.ttl
+
+    if packet.haslayer(TCP):
+        tcp_layer = packet.getlayer(TCP)
+        packet_info["Protocol"] = "TCP"
+        packet_info["Src Port"] = tcp_layer.sport
+        packet_info["Dst Port"] = tcp_layer.dport
+        packet_info["Flags"] = tcp_layer.flags
+
+    if packet.haslayer(UDP):
+        udp_layer = packet.getlayer(UDP)
+        packet_info["Protocol"] = "UDP"
+        packet_info["Src Port"] = udp_layer.sport
+        packet_info["Dst Port"] = udp_layer.dport
+
+    if packet.haslayer(ICMP):
+        icmp_layer = packet.getlayer(ICMP)
+        packet_info["Protocol"] = "ICMP"
+        packet_info["Type"] = icmp_layer.type
+        packet_info["Code"] = icmp_layer.code
+    
+    captured_packets.append(packet_info)
+    
+    # Display the captured packets as a DataFrame
+    df = pd.DataFrame(captured_packets)
+    display(df)
+
+# Sniffing the network and applying the callback function
+print("Starting network sniffing... Press the stop button in the toolbar to stop.")
+sniff(prn=packet_callback, count=0)  # count=0 means capture indefinitely
